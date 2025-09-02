@@ -141,8 +141,13 @@
       if section.settings.menu != blank
         render 'header-drawer'
       endif
+      -%}
+      {% comment %} Bloc retiré pour garder loupe à droite -- reinserer dans la ligne 144 avant -%} en cas de besoin 
+      if section.settings.logo_position == 'top-center' or section.settings.menu == blank
+       render 'header-search', input_id: 'Search-In-Modal-1'
+      endif
+       {%endcomment%}
     
-    -%}
 
     {%- if section.settings.logo_position != 'middle-center' -%}
       {%- if request.page_type == 'index' -%}
