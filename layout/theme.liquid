@@ -373,4 +373,64 @@
       <script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
   </body>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  function ensureSearchBelow(){
+    try {
+      var icons = document.querySelector('.header__icons');
+      if(!icons) return;
+
+      // éviter doublons
+      if(document.querySelector('.desktop-search-below-icons')) return;
+
+      // chercher d'abord le formulaire de recherche déjà rendu (préférer celui dans header__icons s'il existe)
+      var searchForm = document.querySelector('.header__icons .search, .header__icons .header__search, .header__search form, form.search, .search-modal__form');
+      if(!searchForm) {
+        // fallback global
+        searchForm = document.querySelector('form.search, .search-modal__form');
+      }
+      if(!searchForm) return;
+
+      // cloner proprement
+      var clone = searchForm.cloneNode(true);
+
+      // retirer les éléments problématiques (predictive qui dépend du JS original)
+      var predictive = clone.querySelector('[data-predictive-search], .predictive-search--header');
+      if(predictive) predictive.parentNode && predictive.parentNode.removeChild(predictive);
+
+      // corriger les id/for pour éviter duplicate id
+      var input = clone.querySelector('input[type="search"]');
+      if(input){
+        var oldId = input.id || 'search-input';
+        var newId = oldId + '-below';
+        input.id = newId;
+        var label = clone.querySelector('label[for="'+ oldId +'"]');
+        if(label) label.setAttribute('for', newId);
+      }
+
+      // wrapper
+      var wrapper = document.createElement('div');
+      wrapper.className = 'desktop-search-below-icons';
+      wrapper.appendChild(clone);
+
+      // insérer juste après .header__icons
+      if (icons.parentNode) {
+        if (icons.nextSibling) icons.parentNode.insertBefore(wrapper, icons.nextSibling);
+        else icons.parentNode.appendChild(wrapper);
+      }
+    } catch(e) {
+      console && console.error('ensureSearchBelow error', e);
+    }
+  }
+
+  ensureSearchBelow();
+
+  // observer — utile si Shopify ré-renderise la section après customizer actions
+  var header = document.querySelector('header.header');
+  if(header) {
+    var mo = new MutationObserver(function() { ensureSearchBelow(); });
+    mo.observe(header, { childList: true, subtree: true });
+  }
+});
+</script>
 </html>
