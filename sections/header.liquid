@@ -375,10 +375,6 @@
     </search-form>
   {%- endif -%}
 </div>
-    <!-- Champ de recherche sous le logo/menu -->
-<div class="desktop-search-below-icons">
-  {% render 'header-search', input_id: 'Search-Below-Icons' %}
-</div>
       {% comment %}ici c'est la fin du code ajouté pour la loupe pour qu'elle devienne un champs de recherche {% endcomment %}
       {%- if shop.customer_accounts_enabled -%}
         <a
@@ -787,3 +783,7 @@
   ]
 }
 {% endschema %}
+<!-- Champ de recherche sous le logo/menu -->
+<div class="desktop-search-below-icons">
+  {% render 'header-search', input_id: 'Search-Below-Icons' %}
+</div>
