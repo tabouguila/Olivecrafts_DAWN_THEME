@@ -372,5 +372,149 @@
     {%- if settings.cart_type == 'drawer' -%}
       <script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
+  
+  {% comment %} Test search bar ne cache pas le header{% endcomment %}
+  <script>
+/* Inline search injector: clone/build a simple search form and toggle it under header */
+document.addEventListener('DOMContentLoaded', function () {
+  function initInlineSearch() {
+    try {
+      var header = document.querySelector('header.header');
+      if(!header) return;
+
+      // Don't recreate if already present
+      if(document.querySelector('.inline-search-container')) return;
+
+      // Find an existing search form or input to copy action/placeholder/icons
+      var originalForm = document.querySelector('.header__icons .search, .header__search form, form.search, .search-modal__form, .search-form');
+      var foundInput = document.querySelector('.header__icons input[type="search"], input[type="search"]');
+
+      var action = (originalForm && originalForm.getAttribute('action')) || '/search';
+      var placeholder = (foundInput && foundInput.getAttribute('placeholder')) || 'Search';
+      var value = (foundInput && foundInput.value) || '';
+
+      // Create minimal form (robust, doesn't rely on theme JS)
+      var wrapper = document.createElement('div');
+      wrapper.className = 'inline-search-container';
+      wrapper.setAttribute('aria-hidden', 'true');
+
+      var form = document.createElement('form');
+      form.className = 'search inline-cloned-search';
+      form.setAttribute('role', 'search');
+      form.setAttribute('action', action);
+      form.setAttribute('method', 'get');
+
+      var fieldDiv = document.createElement('div');
+      fieldDiv.className = 'field';
+
+      var input = document.createElement('input');
+      input.className = 'search__input field__input';
+      input.setAttribute('type', 'search');
+      // unique id so it doesn't clash
+      var uid = 'inline-search-' + Math.floor(Math.random()*100000);
+      input.setAttribute('id', uid);
+      input.setAttribute('name', 'q');
+      input.setAttribute('placeholder', placeholder);
+      input.value = value;
+
+      var resetBtn = document.createElement('button');
+      resetBtn.setAttribute('type', 'reset');
+      resetBtn.className = 'reset__button field__button hidden';
+      resetBtn.setAttribute('aria-label', 'Reset search');
+
+      var submitBtn = document.createElement('button');
+      submitBtn.setAttribute('type', 'submit');
+      submitBtn.className = 'search__button field__button';
+      submitBtn.setAttribute('aria-label', 'Search');
+
+      // Optionally copy SVG icons from existing buttons if available
+      var origSubmit = document.querySelector('.header__icons button[type="submit"], .header__icons .search__button, form.search button[type="submit"]');
+      if(origSubmit){
+        submitBtn.innerHTML = origSubmit.innerHTML;
+      } else {
+        submitBtn.textContent = '🔍';
+      }
+      var origReset = document.querySelector('.header__icons button[type="reset"], form.search button[type="reset"]');
+      if(origReset){
+        resetBtn.innerHTML = origReset.innerHTML;
+        resetBtn.classList.remove('hidden');
+      } else {
+        resetBtn.innerHTML = '✖';
+      }
+
+      fieldDiv.appendChild(input);
+      fieldDiv.appendChild(resetBtn);
+      fieldDiv.appendChild(submitBtn);
+      form.appendChild(fieldDiv);
+      wrapper.appendChild(form);
+
+      // Insert wrapper after header element
+      if (header.parentNode) {
+        if(header.nextSibling) header.parentNode.insertBefore(wrapper, header.nextSibling);
+        else header.parentNode.appendChild(wrapper);
+      }
+
+      // Toggle logic: find search icon(s) that open modal and hijack them
+      var toggles = document.querySelectorAll('.header__icons .header__search, .header__icons .search-toggle, .header__icon--search, .search-modal__toggle, .icon-search, .header__icon .icon-search');
+      toggles.forEach(function(t) {
+        t.addEventListener('click', function(e) {
+          // prevent default theme modal (if any)
+          if(e) { e.preventDefault(); e.stopPropagation(); }
+          // toggle
+          var open = wrapper.classList.contains('is-open');
+          if(open) {
+            wrapper.classList.remove('is-open');
+            wrapper.setAttribute('aria-hidden', 'true');
+          } else {
+            wrapper.classList.add('is-open');
+            wrapper.setAttribute('aria-hidden', 'false');
+            // focus input
+            setTimeout(function(){ input.focus(); }, 50);
+          }
+          // remove theme modal body class if present
+          document.body.classList.remove('search-modal-open', 'search-is-open');
+        }, {passive: false});
+      });
+
+      // Close on outside click or ESC
+      document.addEventListener('click', function(ev){
+        var inside = ev.target.closest('.inline-search-container') || ev.target.closest('.header__icons') || ev.target.closest('.header__search');
+        if(!inside){
+          wrapper.classList.remove('is-open');
+          wrapper.setAttribute('aria-hidden', 'true');
+        }
+      });
+
+      document.addEventListener('keydown', function(ev){
+        if(ev.key === 'Escape' || ev.key === 'Esc') {
+          wrapper.classList.remove('is-open');
+          wrapper.setAttribute('aria-hidden', 'true');
+        }
+      });
+
+      // small helper to show/hide reset button when input has value
+      input.addEventListener('input', function() {
+        if(input.value && input.value.trim() !== '') resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+      });
+
+      resetBtn.addEventListener('click', function(){ input.value = ''; resetBtn.classList.add('hidden'); input.focus(); });
+
+      // Observe header re-renders (Shopify customizer) and ensure wrapper present
+      var headerEl = document.querySelector('header.header');
+      if(headerEl) {
+        var mo = new MutationObserver(function(){ if(!document.querySelector('.inline-search-container')) initInlineSearch(); });
+        mo.observe(headerEl, { childList:true, subtree:true });
+      }
+
+    } catch(err) {
+      console && console.error('inline search init error', err);
+    }
+  }
+
+  initInlineSearch();
+});
+</script>
+  {% comment %} FIN DU TEST {%  endcomment %}
   </body>
 </html>
